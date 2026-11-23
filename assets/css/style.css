@@ -186,7 +186,7 @@ figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height
 .legend .tile { width: 18px; height: 18px; border-radius: 4px; display: inline-block; vertical-align: -4px; margin-right: 6px; border: 1px solid rgba(0, 0, 0, .12); }
 .bignums { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 26px; }
 .bignum { padding: 16px 18px; flex: 1 1 220px; }
-.bignum b { font: 500 36px/1 var(--serif); display: block; }
+.bignum b { font: 600 36px/1 var(--display); letter-spacing: -.025em; display: block; }
 .bignum span { font-size: 14px; color: var(--ink-2); }
 .bignum .vs { color: var(--ink-3); font-size: 14px; display: block; margin-top: 6px; }
 
@@ -202,8 +202,8 @@ figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height
 .bar .tr { height: 8px; background: var(--chip); border-radius: 4px; overflow: hidden; }
 .bar .fl { height: 100%; border-radius: 4px; transition: width .2s; }
 .slider { display: flex; align-items: center; gap: 12px; margin: 16px 0 6px; }
-.slider input[type=range] { flex: 1; accent-color: var(--to); }
-.slider output { font: 500 13px var(--mono); color: var(--ink-2); min-width: 128px; text-align: right; }
+.slider input[type=range] { flex: 1; min-width: 0; accent-color: var(--to); }
+.slider output { font: 500 13px var(--mono); color: var(--ink-2); min-width: 128px; text-align: right; white-space: nowrap; }
 .final { font: 600 12.5px var(--sans); margin-top: 6px; min-height: 2.8em; line-height: 1.35; }
 .onestep { padding: 16px; }
 .onestep .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -253,7 +253,7 @@ table.nums b { font-weight: 650; }
 .task h3 { font-size: 21px; margin-bottom: 4px; }
 .task .what { font-size: 14px; color: var(--ink-2); margin-bottom: 14px; }
 .task .kpis { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--ink-2); }
-.task .kpis b { font: 500 22px/1 var(--serif); color: var(--ink); margin-right: 4px; }
+.task .kpis b { font: 600 22px/1 var(--display); letter-spacing: -.02em; color: var(--ink); margin-right: 4px; }
 .task .viz { margin-bottom: 12px; }
 .task .stepper .frame, .task .stepper .seg { max-width: 360px; margin-left: auto; margin-right: auto; }
 .task .stepper .seg { display: flex; width: max-content; }
@@ -272,3 +272,17 @@ footer a { color: var(--ink-2); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* phone overrides that must come after the base rules above */
+@media (max-width: 640px) { .slider { gap: 8px; } .slider output { min-width: 0; font-size: 11.5px; } }
+.swipe { display: none; }
+@media (max-width: 640px) {
+  /* wide tables: keep the row names in view while the numbers scroll, and say that they scroll */
+  .swipe { display: block; margin: 10px 0 -4px; font-size: 12.5px; color: var(--ink-3); }
+  .tablewrap table.nums th:first-child, .tablewrap table.nums td:first-child {
+    position: sticky; left: 0; z-index: 1; min-width: 148px; max-width: 148px; background: var(--card);
+    box-shadow: 1px 0 0 var(--line);
+  }
+  /* BibTeX wraps instead of scrolling, below the copy button */
+  pre.bib { white-space: pre-wrap; overflow-wrap: anywhere; padding-top: 48px; font-size: 12.5px; }
+}
