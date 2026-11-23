@@ -182,12 +182,15 @@
       <button class="iconbtn next" aria-label="Next">${NEXT}</button></span></div><div class="dots"></div>`;
     const img = $("img", el), tag = $(".tag", el), txt = $(".txt", el), dots = $(".dots", el);
     dots.innerHTML = frames.map(() => "<i></i>").join("");
+    // every caption sits in the same grid cell, so the label keeps the height of the longest one and nothing jumps between frames
+    txt.innerHTML = frames.map((f) => `<span>${f.label || ""}</span>`).join("");
+    const caps = Array.from(txt.children);
     frames.forEach((f) => { const im = new Image(); im.src = f.src; });
     const S = { i: 0, playing: !REDUCED, visible: false, timer: null };
     const show = (i) => {
       S.i = (i + frames.length) % frames.length;
       const f = frames[S.i];
-      img.src = f.src; txt.innerHTML = f.label || "";
+      img.src = f.src; caps.forEach((c, k) => { c.style.visibility = k === S.i ? "visible" : "hidden"; });
       tag.hidden = !f.tag; tag.textContent = f.tag || ""; tag.className = "tag " + (f.tagClass || "");
       $$("i", dots).forEach((d, k) => d.classList.toggle("on", k === S.i));
     };

@@ -106,7 +106,7 @@ figure { margin: 0; }
 figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height: 1.5; }
 
 /* ------------------------------------------------------------------ teaser */
-.teaser { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 36px; align-items: center; margin-top: 8px; }
+.teaser { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 36px; align-items: start; margin-top: 8px; }
 @media (max-width: 900px) { .teaser { grid-template-columns: 1fr; gap: 24px; } }
 .board-shell { position: relative; padding: 16px; }
 .tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--chip); margin-bottom: 14px; flex-wrap: wrap; }
@@ -115,7 +115,7 @@ figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height
 .chessboard { width: 100%; aspect-ratio: 1; display: block; border-radius: 6px; overflow: hidden; }
 .chessboard .piece { transition: transform .45s cubic-bezier(.4, .1, .2, 1); }
 .chessboard .mk { transition: opacity .35s; }
-.status { display: flex; align-items: center; gap: 10px; min-height: 52px; margin-top: 12px; font-size: 15px; }
+.status { display: flex; align-items: center; gap: 10px; min-height: 4.6em; margin-top: 12px; font-size: 15px; }
 .status .badge { font: 600 12px var(--sans); padding: 3px 8px; border-radius: 6px; background: var(--chip); color: var(--ink-2); white-space: nowrap; }
 .status .badge.model { background: color-mix(in srgb, var(--from) 16%, transparent); color: var(--from); }
 .status .badge.mate { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
@@ -159,6 +159,8 @@ figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height
 .stepper .frame img { width: 100%; }
 .stepper .lab { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: 13.5px; color: var(--ink-2); min-height: 34px; }
 .stepper .lab b { color: var(--ink); font-weight: 600; }
+.stepper .lab .txt { display: grid; }
+.stepper .lab .txt > span { grid-area: 1 / 1; }
 .dots { display: flex; gap: 4px; flex-wrap: wrap; }
 .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); cursor: pointer; }
 .dots i.on { background: var(--ink); }
@@ -174,7 +176,7 @@ figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height
 @media (max-width: 460px) { .maps { gap: 10px; } }
 .mapcard { padding: 12px; }
 .mapcard svg { width: 100%; display: block; border-radius: 6px; }
-.mapcard .cap { font-size: 13px; margin-top: 8px; line-height: 1.4; min-height: 54px; }
+.mapcard .cap { font-size: 13px; margin-top: 8px; line-height: 1.4; min-height: 5.6em; }
 .mapcard .cap b { font-size: 14px; }
 .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-top: 22px; font-size: 14px; color: var(--ink-2); }
 .legend .tile { width: 18px; height: 18px; border-radius: 4px; display: inline-block; vertical-align: -4px; margin-right: 6px; border: 1px solid rgba(0, 0, 0, .12); }
@@ -198,7 +200,7 @@ figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; line-height
 .slider { display: flex; align-items: center; gap: 12px; margin: 16px 0 6px; }
 .slider input[type=range] { flex: 1; accent-color: var(--to); }
 .slider output { font: 500 13px var(--mono); color: var(--ink-2); min-width: 128px; text-align: right; }
-.final { font: 600 12.5px var(--sans); margin-top: 6px; min-height: 20px; }
+.final { font: 600 12.5px var(--sans); margin-top: 6px; min-height: 2.8em; line-height: 1.35; }
 .onestep { padding: 16px; }
 .onestep .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); cursor: pointer; user-select: none; }
