@@ -1,0 +1,48 @@
+# Billiards, image model (paper: Table 2 "Billiards", image column).
+# Qwen-Image-2.1 + rank-64 LoRA; condition = the layout (512 x 288), target = the layout + the label shot (nbm/tasks/billiards).
+task: billiards
+family: image
+
+data:
+  dir: billiards               # under $NBM_DATA (python -m nbm.tasks.billiards.data --out $NBM_DATA/billiards)
+  train_limit: 200000          # every training layout
+
+model:
+  base: Qwen-Image-2.1         # under $NBM_MODELS
+  resolution: 288              # the canvas height; billiards pictures are 512 x 288
+  split_devices: true          # text encoder + VAE on one GPU, DiT on another (2 GPUs per process)
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, img_mlp.proj, img_mlp.gate_layer, img_mlp.out]
+
+train:
+  output_dir: runs/billiards_image
+  processes: 4                 # 4 processes x 2 GPUs; global batch 4 x 1 x 4 = 16
+  batch_size: 4
+  grad_accum: 1
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 20000
+  max_grad_norm: 1.0
+  highlight_loss_weight: 1.0   # plain mean (the cue-ball box only splits the logged loss into hl / rest)
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 8
+  log_every: 10
+  save_every: 1000
+  eval_every: 1000
+  eval_n: 256                  # validation layouts of the in-training evaluation
+  eval_steps: 20
+  eval_batch_size: 4
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 20                    # Euler steps; --steps 1 = the paper's one-step row
+  batch_size: 8                # the paper's test batches (outputs depend on the batch at bfloat16 rounding level)
+  seed: 0
+  votes: 1                     # --votes n: circular-median vote over n samples

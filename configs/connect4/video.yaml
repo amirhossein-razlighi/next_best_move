@@ -1,0 +1,47 @@
+# Connect Four, video model (paper Table 2): Wan2.2-TI2V-5B LoRA, 256 px clips of the solver's best line (up to 8 plies),
+# the paper run's hyper-parameters.
+task: connect4
+family: video
+
+data:
+  dir: connect4                # under $NBM_DATA (nbm/tasks/connect4/data.py)
+  train_limit: 1000000         # all 200,000 train rows
+
+model:
+  base: Wan2.2-TI2V-5B-Diffusers
+  resolution: 256
+  flow_shift: 3.0
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, ffn.net.0.proj, ffn.net.2]
+
+train:
+  output_dir: runs/connect4_video
+  processes: 8                 # one 8-GPU node; global batch 16
+  batch_size: 2
+  grad_accum: 1
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 10000
+  max_grad_norm: 1.0
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 4
+  log_every: 10
+  save_every: 250
+  eval_every: 500
+  eval_n: 128                  # the first 128 val positions
+  eval_steps: 30
+  eval_batch_size: 4
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 30                    # UniPC steps (--steps 1 = the one-step readout)
+  batch_size: 2                  # the paper's batches
+  seed: 0
+  votes: 1

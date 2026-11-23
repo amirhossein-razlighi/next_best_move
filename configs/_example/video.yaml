@@ -1,0 +1,51 @@
+# Toy task (nbm/tasks/_example): template of a video-model config.
+task: _example
+family: video
+
+data:
+  dir: _example
+  train_limit: 1000
+
+model:
+  base: Wan2.2-TI2V-5B-Diffusers
+  resolution: 256
+  flow_shift: 3.0              # time shift of the training noise levels and of the UniPC sampler
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, ffn.net.0.proj, ffn.net.2]
+
+train:
+  output_dir: runs/_example_video
+  processes: 1
+  batch_size: 1
+  grad_accum: 2
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 2000
+  max_grad_norm: 1.0
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 4
+  log_every: 10
+  save_every: 250
+  eval_every: 500
+  eval_n: 32
+  eval_steps: 30
+  eval_batch_size: 2
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 30                    # UniPC steps (--steps 1 = the one-step readout)
+  batch_size: 2
+  seed: 0
+  votes: 1
+
+options:
+  n_train: 1000
+  n_val: 32
+  n_test: 32

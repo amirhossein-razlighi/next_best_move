@@ -1,0 +1,53 @@
+# Toy task (nbm/tasks/_example): template of an image-model config. The paper configs (configs/<task>/image.yaml) have the same
+# keys with the values of the paper's runs.
+task: _example
+family: image
+
+data:
+  dir: _example                # under $NBM_DATA (the toy task generates its rows and reads nothing)
+  train_limit: 1000            # first N rows of the train split
+
+model:
+  base: Qwen-Image-2.1         # under $NBM_MODELS
+  resolution: 256
+  split_devices: true          # text encoder + VAE on one GPU, DiT on another (2 GPUs per process, for 24 GB cards)
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, img_mlp.proj, img_mlp.gate_layer, img_mlp.out]
+
+train:
+  output_dir: runs/_example_image   # under $NBM_OUTPUTS
+  processes: 1                 # processes of the paper's launch (global batch = batch_size x grad_accum x processes)
+  batch_size: 4
+  grad_accum: 1
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 2000
+  max_grad_norm: 1.0
+  highlight_loss_weight: 1.0   # loss weight of the latents inside ImageExample.boxes (1 = plain mean)
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 4
+  log_every: 10
+  save_every: 500
+  eval_every: 500
+  eval_n: 64                   # validation rows of the training monitor (Task.evaluate every eval_every steps)
+  eval_steps: 20
+  eval_batch_size: 8
+  dist_timeout_min: 240
+  resume: null                 # latest | <checkpoint dir>
+
+eval:
+  steps: 20                    # Euler steps (--steps 1 = the one-step readout)
+  batch_size: 8
+  seed: 0
+  votes: 1                     # --votes n = majority vote over n samples
+
+options:
+  n_train: 1000
+  n_val: 64
+  n_test: 64

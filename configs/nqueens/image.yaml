@@ -1,0 +1,52 @@
+# N-queens, image model (paper Appendix A.6). The paper reads the decision with --steps 1.
+#
+# Global batch 8, as in the paper: the paper run used 8 processes x batch 1 (two nodes, 16 GPUs with split_devices). This
+# config gives the same global batch on one node of 8 x 24 GB GPUs: 4 processes x batch 1 x grad_accum 2. Each optimizer step
+# trains on exactly the same 8 training rows as the paper run (process r takes global batches 8s + r and 8s + 4 + r of the
+# same batch stream); only the per-process noise / sigma draws differ. On 16 GPUs use processes 8, grad_accum 1.
+task: nqueens
+family: image
+
+data:
+  dir: nqueens                 # under $NBM_DATA (python -m nbm.tasks.nqueens.data build --out $NBM_DATA/nqueens)
+  train_limit: 1000000         # every train row (200,071)
+
+model:
+  base: Qwen-Image-2.1
+  resolution: 384
+  split_devices: true          # text encoder + VAE on one GPU, DiT on another (2 GPUs per process)
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, img_mlp.proj, img_mlp.gate_layer, img_mlp.out]
+
+train:
+  output_dir: runs/nqueens_image
+  processes: 4
+  batch_size: 1
+  grad_accum: 2                # 4 processes x 1 x 2 = 8 = the paper's 8 processes x 1 x 1
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 24000
+  max_grad_norm: 1.0
+  highlight_loss_weight: 1.0
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 8
+  log_every: 10
+  save_every: 2000
+  eval_every: 4000
+  eval_n: 64
+  eval_steps: 20
+  eval_batch_size: 8
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 20                    # full sampling; the paper's headline readout is --steps 1
+  batch_size: 8                # the paper's records: batches of 8 consecutive boards
+  seed: 0
+  votes: 1

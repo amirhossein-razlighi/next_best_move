@@ -1,0 +1,46 @@
+# Shortest path, video model (Table 2): decide / imagine clips of up to 8 moves, executed.
+task: pathfinding.shortest_path
+family: video
+
+data:
+  dir: shortest_path          # under $NBM_DATA (python -m nbm.tasks.pathfinding.data)
+  train_limit: 1000000           # every training row (one clip per map)
+
+model:
+  base: Wan2.2-TI2V-5B-Diffusers
+  resolution: 384                # 32 px cells = one latent token
+  flow_shift: 3.0
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, ffn.net.0.proj, ffn.net.2]
+
+train:
+  output_dir: runs/shortest_path_video
+  processes: 8                   # 8 processes x 1 GPU; global batch 1 x 2 x 8 = 16 clips
+  batch_size: 1
+  grad_accum: 2
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 5000
+  max_grad_norm: 1.0
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 4
+  log_every: 10
+  save_every: 250
+  eval_every: 500
+  eval_n: 128
+  eval_steps: 30
+  eval_batch_size: 2
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 30                      # UniPC steps per clip (--steps 1 = the one-step readout)
+  batch_size: 2                  # outputs depend on the batch at bfloat16 rounding level
+  seed: 0
+  votes: 1

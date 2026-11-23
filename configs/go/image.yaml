@@ -1,0 +1,48 @@
+# Go 19 x 19, image model (paper Table 2): Qwen-Image-2.1 LoRA, whole board at 384 px, red disc on the
+# KataGo move, 1,000,000 KGS training positions, one epoch on 4 processes x 2 GPUs (global batch 8).
+task: go
+family: image
+
+data:
+  dir: go        # under $NBM_DATA: train / val / test.parquet (nbm/tasks/go/build.py)
+  train_limit: 1000000
+
+model:
+  base: Qwen-Image-2.1
+  resolution: 384
+  split_devices: true
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, img_mlp.proj, img_mlp.gate_layer, img_mlp.out]
+
+train:
+  output_dir: runs/go_image
+  processes: 4
+  batch_size: 2
+  grad_accum: 1
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 125000
+  max_grad_norm: 1.0
+  highlight_loss_weight: 5.0   # the cell of the red disc
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 8
+  log_every: 10
+  save_every: 5000
+  eval_every: 12500
+  eval_n: 256                  # phase-stratified validation prefix
+  eval_steps: 20
+  eval_batch_size: 4
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 20                    # --steps 1: the one-step readout
+  batch_size: 8
+  seed: 0
+  votes: 1

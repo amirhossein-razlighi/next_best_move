@@ -1,0 +1,22 @@
+# default locations of NBM_MODELS / NBM_DATA / NBM_OUTPUTS
+/models/
+/data/
+/outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+/checkpoints/
+/tools/
+/work/

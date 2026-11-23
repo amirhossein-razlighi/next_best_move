@@ -1,0 +1,49 @@
+# Chess, video model (paper Tab. 1 "Video model"): Wan2.2-TI2V-5B LoRA, 256 px decide / imagine clips of up to 8 plies with
+# green legal-destination dots, the first 3M training puzzles, 187.5k steps at global batch 16 (16 processes x 1 GPU).
+task: chess
+family: video
+
+data:
+  dir: chess
+  train_limit: 3000000
+
+model:
+  base: Wan2.2-TI2V-5B-Diffusers
+  resolution: 256
+  flow_shift: 3.0
+  lora:
+    rank: 64
+    alpha: 64.0
+    dropout: 0.0
+    targets: [to_q, to_k, to_v, to_out.0, ffn.net.0.proj, ffn.net.2]
+
+train:
+  output_dir: runs/chess_video
+  processes: 16
+  batch_size: 1
+  grad_accum: 1
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 200
+  max_steps: 187500
+  max_grad_norm: 1.0
+  gradient_checkpointing: true
+  seed: 0
+  num_workers: 4
+  log_every: 10
+  save_every: 3750
+  eval_every: 9375
+  eval_n: 256
+  eval_steps: 30
+  eval_batch_size: 4
+  dist_timeout_min: 240
+  resume: null
+
+eval:
+  steps: 30                    # UniPC steps; --steps 1 = the one-step readout
+  batch_size: 4
+  seed: 0                      # row i, vote sample j: noise seed row_seed(seed, i, j)
+  votes: 1
+  chunk_rows: 1000             # the paper's evaluation layout: chunks of 1,000 rows ...
+  lanes: 4                     # ... dealt round-robin into 4 lanes of batches (only affects bfloat16 rounding)

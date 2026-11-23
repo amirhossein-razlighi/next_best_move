@@ -1,0 +1,54 @@
+[project]
+name = "nbm"
+version = "0.1.0"
+license = { text = "MIT" }
+description = "Learning the Next Best Move with Visual Diffusion Models: LoRA fine-tuning of Qwen-Image-2.1 and Wan2.2-TI2V-5B to draw moves."
+readme = "README.md"
+requires-python = "==3.11.*"
+dependencies = [
+    "torch==2.14.1",
+    "torchvision==0.29.1",
+    "diffusers",
+    "transformers==5.19.0",
+    "accelerate==1.15.0",
+    "peft==0.21.2",
+    "huggingface_hub[hf_xet]==1.33.0",
+    "safetensors==0.8.0",
+    "sentencepiece==0.2.2",
+    "protobuf==7.36.2",
+    "pillow==12.3.0",
+    "numpy==2.4.6",
+    "pandas==3.0.6",
+    "zstandard==0.25.0",
+    "pyarrow==26.0.0",
+    "pyyaml==6.0.3",
+    "tensorboard==2.21.0",
+    "imageio[ffmpeg]==2.38.1",
+    "chess==1.11.2",
+    "cairosvg==2.9.1",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.4.2"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["nbm*"]
+
+[tool.uv.sources]
+# the Qwen-Image-2.1 pipeline classes are only in this diffusers revision; the released checkpoints were trained with it
+diffusers = { git = "https://github.com/huggingface/diffusers", rev = "1d5d056ecff3a8c1d887a7dd1aa66ca4a0323458" }
+torch = { index = "pytorch-cu126" }
+torchvision = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
