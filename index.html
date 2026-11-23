@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning the Next Best Move with Visual Diffusion Models</title>
+<meta name="description" content="A pretrained visual diffusion model, fine-tuned on board images and their next best moves, draws the move on the image: chess sacrifices, cost-aware routes, Connect Four, Go and billiards, without search at inference.">
+<meta property="og:title" content="Learning the Next Best Move with Visual Diffusion Models">
+<meta property="og:description" content="Visual diffusion models learn to draw the next best move: chess sacrifices, cheaper detours on hidden-cost terrain, Connect Four, Go and billiards, without search at inference.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#f7f5f0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f0d9b5'/%3E%3Crect x='0' y='0' width='16' height='16' fill='%232f6fd6'/%3E%3Crect x='16' y='16' width='16' height='16' fill='%23e0452f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>
+  try { const t = localStorage.getItem("nbm-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="dot" aria-hidden="true"></span>Next Best Move</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#idea">Idea</a><a href="#method">Method</a><a href="#terrain">Pathfinding</a><a href="#onestep">One step</a>
+      <a href="#recall">Recall or play</a><a href="#beyond">Beyond chess</a><a href="#numbers">Numbers</a><a href="#bibtex">BibTeX</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</div>
+
+<header class="hero wrap" id="top">
+  <h1 class="title">Learning the Next Best Move with Visual Diffusion Models</h1>
+  <div class="authors">
+    <span>Amir Razlighi<sup>1,2,3</sup></span>
+    <span>Ali Mahdavi Amiri<sup>1</sup></span>
+    <span>Yiorgos Chrysanthou<sup>2,3</sup></span>
+    <span>Andrey Voynov<sup>4</sup></span>
+    <span>Daniel Cohen-Or<sup>5</sup></span>
+  </div>
+  <div class="affils">
+    <span><sup>1</sup>Simon Fraser University</span><span><sup>2</sup>University of Cyprus</span><span><sup>3</sup>CYENS Centre of Excellence</span>
+    <span><sup>4</sup>Google DeepMind</span><span><sup>5</sup>Tel Aviv University</span>
+  </div>
+  <div class="buttons">
+    <!-- TODO: replace href with the arXiv URL once the paper is online -->
+    <a class="btn" href="#" aria-disabled="true" title="arXiv link coming soon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
+      Paper <span class="soon">arXiv soon</span></a>
+    <a class="btn" href="https://github.com/amirhossein-razlighi/next_best_move">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.42c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.3-1.69-1.3-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      Code</a>
+    <!-- TODO: link released checkpoints and data -->
+    <a class="btn ghost" href="#" aria-disabled="true" title="Coming soon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+      Weights &amp; Data <span class="soon">soon</span></a>
+    <a class="btn ghost" href="#bibtex">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+      BibTeX</a>
+  </div>
+  <p class="quote">&ldquo;I see only one move ahead, but it is always the correct one.&rdquo;<span>attributed to Jos&eacute; Ra&uacute;l Capablanca</span></p>
+</header>
+
+<!-- ============================================================== TEASER -->
+<section id="idea" style="padding-top:28px">
+  <div class="wrap">
+    <div class="teaser">
+      <div class="card board-shell">
+        <div class="tabs" role="tablist" aria-label="Puzzle">
+          <button role="tab" aria-selected="true" data-line="rook">Rook sacrifice</button>
+          <button role="tab" aria-selected="false" data-line="queen">Double queen sacrifice</button>
+        </div>
+        <svg class="chessboard" id="teaserBoard" viewBox="0 0 360 360" role="img" aria-label="Chess board replaying the model's moves"></svg>
+        <div class="status" id="teaserStatus" aria-live="polite"></div>
+        <div class="movelist" id="teaserMoves"></div>
+        <div class="ctrl">
+          <button class="iconbtn" id="teaserPlay" aria-label="Pause"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+          <button class="iconbtn" id="teaserRestart" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+          <span class="tiny" id="teaserNote"></span>
+        </div>
+      </div>
+      <div class="tldr">
+        <div class="kicker">The idea</div>
+        <h2>The model sees a board and draws its move</h2>
+        <p class="lede" style="font-size:17.5px">We fine-tune a pretrained visual diffusion model on board images and their next best moves.
+          It marks a move by tinting the origin square <span class="legend-inline"><i class="sw from"></i><span class="blue">blue</span></span>
+          and the destination square <span class="legend-inline"><i class="sw to"></i><span class="red">red</span></span>. The move is applied,
+          the opponent replies, and the new board is fed back in. There is no search, no engine and no rule module at inference:
+          each move comes from a single generation.</p>
+        <div class="stat"><b>47.9<small>%</small></b><p>of the 1,001 held-out <b>sacrifice</b> puzzles solved on the first move by the video model (57.3% with voting), against 16.4% for copying the move of the nearest training position.</p></div>
+        <div class="stat"><b>87.5<small>%</small></b><p>of held-out terrain maps crossed by the <b>cheapest</b> route, although tile costs are never shown, against 59.2% for the fewest-steps route.</p></div>
+        <div class="stat"><b>62.5<small>%</small></b><p>of chess puzzles answered from the <b>first denoising step</b> alone, against 56.0% for a fully denoised sample of the same image model.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== ABSTRACT -->
+<section id="abstract">
+  <div class="wrap narrow">
+    <div class="kicker">Abstract</div>
+    <div class="abstract">
+      <p>In this paper, we show that visual diffusion models can learn to predict the next best move (NBM) in tasks requiring sequential
+        reasoning and lookahead, without explicitly exploring future steps or exhaustive searching at inference. Previous work demonstrated
+        that these models can generate complete solutions to geometric and reasoning problems. Here, we show that simple fine-tuning on
+        visual state&ndash;NBM pairs enables a pretrained model to select actions whose value depends on consequences several steps ahead.
+        Each move is predicted directly in image space from the current state, without an explicit symbolic representation or search
+        procedure. Repeated NBM predictions then construct a solution one decision at a time.</p>
+      <p>We demonstrate this capability on chess puzzles and tile-based pathfinding, and show that it extends to Connect Four, Go and
+        billiards. In chess, the model predicts legal moves and finds the best move far more often than by recalling similar training
+        positions, including piece sacrifices whose benefit emerges only through later tactical continuations. In pathfinding, it
+        constructs shortest paths on uniform-cost maps and cost-optimal routes across terrain tiles with different traversal costs,
+        choosing longer routes when they are cheaper overall. These costs are learned implicitly from examples, without numerical cost
+        supervision. These results show that direct visual move prediction can support globally informed decisions and successful
+        sequential problem solving.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== METHOD -->
+<section id="method">
+  <div class="wrap">
+    <div class="kicker">Method</div>
+    <h2>State is an image, action is an edit, decisions are samples</h2>
+    <p class="lede">No new modules and no architecture change: we adapt Qwen-Image (one move per call) and the video model Wan2.2-TI2V-5B
+      (several moves per clip) with LoRA, keeping their rectified-flow training objective.</p>
+    <div class="grid3" style="margin-top:30px">
+      <article class="card panel">
+        <span class="num">01</span>
+        <h3>Actions as image edits</h3>
+        <p>The target is the input with the move drawn on it, M(x, a): every other pixel is unchanged. A rule-free decoder D fits the tint of each square and returns the strongest blue and strongest red square. A move that cannot be played counts as a failure.</p>
+        <div class="viz">
+          <div class="stepper" id="editStepper"></div>
+          <p class="small" style="margin:10px 0 0">D reads <span class="blue">d4</span> &rarr; <span class="red">f6</span>: <span class="pill">Qxf6#</span>. The only text input is a fixed prompt: <i>&ldquo;White to move. Highlight the best move: the origin square in blue and the destination square in red.&rdquo;</i></p>
+        </div>
+      </article>
+      <article class="card panel">
+        <span class="num">02</span>
+        <h3>Closed loop</h3>
+        <p>The environment applies the decoded move (and, in games, the opponent's reply), renders the new state, and the model is called again. Below: the image model's actual inputs and outputs on a held-out terrain map; the red disc marks the next cell.</p>
+        <div class="viz stepper" id="loopStepper"></div>
+      </article>
+      <article class="card panel">
+        <span class="num">03</span>
+        <h3>Horizon: Decide and Imagine</h3>
+        <p>The video model draws several moves in one clip, alternating <b>Decide</b> frames (the move marked, plus green dots on the moving piece's legal squares) and <b>Imagine</b> frames (the board after it), replies included. Against an opponent only the first move is played.</p>
+        <div class="viz stepper" id="videoStepper"></div>
+      </article>
+    </div>
+    <div class="callout"><b>Drawing the future helps decide the present.</b> A video model trained to draw the whole solution line, replies
+      included, predicts the next move more accurately than the same model trained on the first move alone, although only the first move is
+      scored (24.6% against 21.4% in chess, same 400,000 puzzles and budget). Against an opponent, a new prediction on the observed board is
+      better than following the drawn continuation (52.5% against 41.2% for the next move on identical boards).</div>
+  </div>
+</section>
+
+<!-- ============================================================== TERRAIN -->
+<section id="terrain">
+  <div class="wrap">
+    <div class="kicker">Cost-aware pathfinding</div>
+    <h2>Longer, but cheaper: costs it was never told</h2>
+    <p class="lede">Entering floor, mud and sand costs 1, 2 and 4, but these numbers are never drawn or stated; the model only sees example
+      routes. Calling the image model once per move on held-out maps, it walks around expensive bands when that is cheaper, and steps into
+      them when going around costs more.</p>
+    <div class="legend" id="terrainLegend"></div>
+    <div class="maps" id="maps"></div>
+    <div class="bignums">
+      <div class="card bignum"><b>87.5%</b><span>cheapest route on 1,000 held-out terrain maps</span><span class="vs">fewest-steps route (BFS): 59.2%</span></div>
+      <div class="card bignum"><b>85.0%</b><span>right choice where the cheapest route detours around or crosses a costly band</span><span class="vs">chance: 50.0%</span></div>
+      <div class="card bignum"><b>94.6%</b><span>optimal routes on uniform maps (video model)</span><span class="vs">pretrained model, zero-shot: 0.0%</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== ONE STEP -->
+<section id="onestep">
+  <div class="wrap">
+    <div class="kicker">The surprising part</div>
+    <h2>One step reads the decision; full sampling draws one</h2>
+    <p class="lede">At every denoising step the model estimates the clean output. Its <b>first</b> estimate shows several candidate moves
+      as faint, overlapping marks, and the strongest one is usually right. Full sampling instead follows each noise draw to a single move.
+      Scrub through the 20 steps of four independent samples of one held-out puzzle (Table&nbsp;1 image model).</p>
+
+    <div class="explorer">
+      <div>
+        <div class="card onestep">
+          <div class="pair">
+            <figure><img class="pix" id="dnCond" alt="Input board" loading="lazy"><figcaption>input &middot; Black to move</figcaption></figure>
+            <figure><img class="pix" id="dnOne" alt="One-step output" loading="lazy"><figcaption id="dnOneCap">one-step output</figcaption></figure>
+          </div>
+          <label class="toggle" style="margin-top:10px"><input type="checkbox" id="dnEnh" checked> contrast-enhance the one-step output</label>
+          <p class="small muted" style="margin:10px 0 0" id="dnText"></p>
+        </div>
+      </div>
+      <div>
+        <div class="slider">
+          <button class="iconbtn" id="dnPlay" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+          <input type="range" id="dnStep" min="0" max="19" value="0" aria-label="Denoising step">
+          <output id="dnOut">step 1 / 20</output>
+        </div>
+        <div class="draws" id="draws"></div>
+        <p class="tiny" style="margin-top:10px">Each panel is the model's unaltered estimate of the clean image at that step (noise level &sigma; from 1 to 0.02). Bars: strength of each candidate's marks (1 = a fully drawn mark).</p>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:44px; align-items:start">
+      <div>
+        <h3>Why: the first estimate is an average</h3>
+        <p style="margin-top:10px">Training gives the model a distribution &pi;(m&nbsp;|&nbsp;c) over the moves m of a board c. The best prediction of the
+          clean output from a noisy one is the mean of all clean outputs that could have produced it. At full noise, where the input says
+          nothing about the move, that mean is the average of the move images I<sub>m</sub>, weighted by their probabilities (Tweedie's formula):</p>
+        <div class="eq">
+          <math display="block"><mrow><msub><mover><mi>x</mi><mo>^</mo></mover><mn>0</mn></msub><mo>=</mo><mi mathvariant="double-struck">E</mi><mo stretchy="false">[</mo><msub><mi>x</mi><mn>0</mn></msub><mo>&#x2223;</mo><mi>c</mi><mo stretchy="false">]</mo><mo>=</mo><munder><mo>&#x2211;</mo><mi>m</mi></munder><mi>&#x3C0;</mi><mo stretchy="false">(</mo><mi>m</mi><mo>&#x2223;</mo><mi>c</mi><mo stretchy="false">)</mo><mspace width="0.2em"/><msub><mi>I</mi><mi>m</mi></msub></mrow></math>
+        </div>
+        <p>So a single step returns the whole distribution at once, and its strongest marks pick out the most likely move. Many steps
+          turn that average into one draw, chosen in proportion to its probability: right less often, but more diverse.</p>
+      </div>
+      <div>
+        <h3>What it buys</h3>
+        <table class="nums" style="margin-top:12px">
+          <thead><tr><th>Chess, held-out puzzles (%)</th><th>Image</th><th>Video</th></tr></thead>
+          <tbody>
+            <tr><td>one fully denoised sample</td><td>56.0</td><td>56.4</td></tr>
+            <tr><td>first denoising step</td><td><b>62.5</b></td><td><b>63.9</b></td></tr>
+            <tr><td>majority vote of 8 full samples</td><td>63.8</td><td>65.4</td></tr>
+            <tr><td>at least one of 8 full samples correct</td><td>85.4</td><td>86.6</td></tr>
+          </tbody>
+        </table>
+        <p class="small muted" style="margin-top:12px">Because the average hardly depends on the noise, repeated one-step outputs agree: eight of them
+          contain the answer for only 69.2% of puzzles, against 85.4% for eight full samples. One step is the better answer; sampling is
+          the better source of candidates. Routes, by contrast, need full sampling: the average of several routes is not itself a route.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:48px">The same effect in chess, Go and Connect Four</h3>
+    <div class="tabs" role="tablist" aria-label="Task" id="stripTabs" style="margin-top:14px">
+      <button role="tab" aria-selected="true" data-task="chess">Chess</button>
+      <button role="tab" aria-selected="false" data-task="go">Go</button>
+      <button role="tab" aria-selected="false" data-task="c4">Connect Four</button>
+    </div>
+    <div class="grouphead"><span>One step: the distribution in one image</span><span></span><span>Full sampling (20 steps): one draw per noise seed</span></div>
+    <div class="stripgrid" id="strip"></div>
+  </div>
+</section>
+
+<!-- ============================================================== RECALL OR PLAY -->
+<section id="recall">
+  <div class="wrap">
+    <div class="kicker">Recall or play?</div>
+    <h2>One added bishop changes the best move, and the model switches</h2>
+    <div class="pairwrap">
+      <div class="card" style="padding:16px">
+        <div class="switchrow">
+          <div class="seg" role="group" aria-label="Board">
+            <button aria-pressed="true" data-pair="orig">Original puzzle</button>
+            <button aria-pressed="false" data-pair="white">+ white bishop on c3</button>
+          </div>
+          <div class="seg" role="group" aria-label="Overlay">
+            <button aria-pressed="true" data-ov="move">Model's move</button>
+            <button aria-pressed="false" data-ov="occ">What it depends on</button>
+          </div>
+        </div>
+        <svg class="chessboard" id="pairBoard" viewBox="0 0 360 360" role="img" aria-label="Minimal pair board"></svg>
+        <div class="status" id="pairStatus"></div>
+        <div class="heatscale" id="pairScale" hidden><span>0</span><i></i><span>1</span><span>&nbsp;drop in the model's confidence in its move when that piece is removed</span></div>
+        <div class="real"><img id="pairReal" alt="Unaltered first Decide frame of the video model"><span class="tiny" id="pairRealCap"></span></div>
+      </div>
+      <div>
+        <p style="font-size:17px">On a held-out puzzle (rated 1932) the model plays the rook sacrifice <b>Rxh6+</b>, which forces mate in three.
+          Adding a white bishop on c3 leaves the board almost unchanged visually, yet the bishop now guards h8, so <b>Qh8#</b> mates
+          at once, and the model switches to exactly this move.</p>
+        <p style="font-size:17px">Removing one piece at a time shows what each decision rests on: the sacrifice depends on the pieces that build
+          the later mating net; with the added bishop, the decision depends most on the bishop guarding h8 and Black's own pawn on g6,
+          which blocks the king's only escape.</p>
+        <p class="small muted">Over thousands of such changes and exact symmetries, the models' choices track the position while retrieval does not:</p>
+        <table class="nums">
+          <thead><tr><th>Held-out chess (%)</th><th>Far from<br>training</th><th>One piece changed:<br>finds new best move</th></tr></thead>
+          <tbody>
+            <tr><td>Image model</td><td>50.4</td><td>39.5</td></tr>
+            <tr><td>Video model</td><td>51.0</td><td>38.4</td></tr>
+            <tr><td class="sub">+ one step</td><td><b>59.1</b></td><td><b>45.5</b></td></tr>
+            <tr><td>Copy nearest training position</td><td>8.7</td><td>6.7</td></tr>
+            <tr><td>Majority of 16 nearest</td><td>16.8</td><td>12.5</td></tr>
+          </tbody>
+        </table>
+        <p class="tiny" style="margin-top:8px">&ldquo;Far&rdquo;: 13&ndash;16 of 64 squares differ from the nearest training position. Models trained on three million puzzles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== BEYOND CHESS -->
+<section id="beyond">
+  <div class="wrap">
+    <div class="kicker">Beyond chess</div>
+    <h2>The same recipe, unchanged</h2>
+    <p class="lede">Whatever a player observes fits in one image, and the action becomes an edit of it: a disc in a column, a stone on a point,
+      a cue direction and power. Gravity, the rules of Go and the physics of the table are never stated; the prompt is simply
+      &ldquo;Continue.&rdquo; (or the side to move).</p>
+    <div class="tasks">
+      <article class="card task">
+        <h3>Connect Four</h3>
+        <div class="what">The move is the mover's disc drawn in its landing cell. The video model plays both sides several moves ahead.</div>
+        <div class="viz stepper" id="c4Stepper"></div>
+        <div class="kpis">
+          <span><b>100.0%</b>legal, correct landing row (image)</span>
+          <span><b>76.4%</b>keeps the win on hard positions (one step)</span>
+          <span>one-move heuristic: 60.4%</span>
+        </div>
+      </article>
+      <article class="card task">
+        <h3>Go <span class="tiny">19&times;19, KGS</span></h3>
+        <div class="what">The move is a red dot on the chosen point; labels are KataGo's preferred moves.</div>
+        <div class="viz gopair">
+          <figure><img class="pix" id="goCond" alt="Go position" loading="lazy"><figcaption id="goCondCap"></figcaption></figure>
+          <figure><img class="pix" id="goOne" alt="One-step output, contrast-enhanced" loading="lazy"><figcaption id="goOneCap"></figcaption></figure>
+        </div>
+        <p class="small muted" id="goText"></p>
+        <div class="kpis">
+          <span><b>99.8%</b>legal moves</span>
+          <span><b>31.1%</b>KataGo's move (one step; 20.9% full sampling)</span>
+          <span>copy nearest position: 1.7%</span>
+        </div>
+      </article>
+      <article class="card task">
+        <h3>Billiards</h3>
+        <div class="what">A continuous action: an aim line from the cue ball, a cue stick behind it and a power bar. Below, the video model's drawn shot, then that shot replayed in the simulator.</div>
+        <div class="tabs" role="tablist" aria-label="Shot type" id="bilTabs" style="margin-bottom:10px"></div>
+        <div class="viz"><canvas class="bil" id="bilCanvas" width="1024" height="576" aria-label="Billiards shot"></canvas>
+          <div class="small muted" id="bilLab" style="margin-top:10px;min-height:42px"></div></div>
+        <div class="kpis">
+          <span><b>47.9%</b>ball potted (video, one step)</span>
+          <span><b>34.6%</b>full sampling</span>
+          <span>copy nearest shot: 19.0%</span>
+        </div>
+      </article>
+      <article class="card task">
+        <h3>N-queens</h3>
+        <div class="what">Place the next queen so the board can still be completed. A model trained to draw the whole solution is run in a loop: only its first new queen is placed, then it draws again.</div>
+        <div class="viz stepper" id="nqStepper"></div>
+        <div class="kpis">
+          <span><b>85.2%</b>completable next queen, held-out solution families</span>
+          <span>random safe cell: 71.2%</span>
+          <span><b>55.7%</b>boards solved in the loop vs 34.7% in one pass</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== NUMBERS -->
+<section id="numbers">
+  <div class="wrap">
+    <div class="kicker">Key numbers</div>
+    <h2>Results at a glance</h2>
+    <h3 style="margin-top:30px">Chess: recall or play? <span class="tiny">(Table 1, 10,000 held-out puzzles)</span></h3>
+    <div class="card tablewrap" style="margin-top:14px">
+      <table class="nums">
+        <thead>
+          <tr><th rowspan="2">Next-best-move accuracy (%)</th><th colspan="3" style="text-align:center">Held-out puzzles</th><th colspan="2" style="text-align:center">Symmetric boards<br>(0 = no change)</th><th colspan="3" style="text-align:center">One piece changed</th></tr>
+          <tr><th>All &uarr;</th><th>Sacrifices &uarr;</th><th>Far from training &uarr;</th><th>Colour flip</th><th>Mirror</th><th>Keeps move: best stays &uarr;</th><th>Keeps move: best changes &darr;</th><th>Finds new best move &uarr;</th></tr>
+        </thead>
+        <tbody>
+          <tr class="grp"><td colspan="9">Ours</td></tr>
+          <tr><td>Image model</td><td>56.0</td><td>46.3</td><td>50.4</td><td>+1.2</td><td>&minus;1.9</td><td>82.3</td><td>35.3</td><td>39.5</td></tr>
+          <tr><td class="sub">+ majority vote</td><td>63.8</td><td>54.9</td><td>58.7</td><td>+1.2</td><td>&minus;1.5</td><td>89.7</td><td>37.7</td><td>42.5</td></tr>
+          <tr><td class="sub">+ oracle of 8 samples&dagger;</td><td>85.4</td><td>83.5</td><td>82.3</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+          <tr><td class="sub">+ one step</td><td>62.5</td><td>51.7</td><td>56.6</td><td>&minus;0.1</td><td>&minus;1.8</td><td>94.7</td><td>35.9</td><td>43.6</td></tr>
+          <tr><td class="sub">+ one step + majority vote</td><td>63.2</td><td>53.0</td><td>57.9</td><td>&minus;0.1</td><td>&minus;1.8</td><td>94.8</td><td>36.1</td><td>44.4</td></tr>
+          <tr><td>Video model</td><td>56.4</td><td>47.9</td><td>51.0</td><td>+0.1</td><td>&minus;2.7</td><td>94.3</td><td>42.0</td><td>38.4</td></tr>
+          <tr><td class="sub">+ majority vote</td><td>65.4</td><td>57.3</td><td>61.5</td><td>&minus;0.1</td><td>&minus;2.9</td><td>94.5</td><td>39.7</td><td>42.6</td></tr>
+          <tr><td class="sub">+ oracle of 8 samples&dagger;</td><td>86.6</td><td>82.1</td><td>84.1</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+          <tr><td class="sub">+ one step</td><td>63.9</td><td>55.6</td><td>59.1</td><td>+0.7</td><td>&minus;1.1</td><td>95.8</td><td>37.0</td><td>45.5</td></tr>
+          <tr><td class="sub">+ one step + majority vote</td><td>64.7</td><td>56.2</td><td>60.0</td><td>+0.9</td><td>&minus;0.5</td><td>95.9</td><td>36.6</td><td>46.6</td></tr>
+          <tr class="grp"><td colspan="9">Copying from training</td></tr>
+          <tr><td>Nearest training position</td><td>18.6</td><td>16.4</td><td>8.7</td><td>+1.2</td><td>&minus;4.3</td><td>36.2</td><td>32.1</td><td>6.7</td></tr>
+          <tr><td>Majority of 16 nearest</td><td>27.0</td><td>27.0</td><td>16.8</td><td>+0.8</td><td>&minus;6.9</td><td>56.5</td><td>48.1</td><td>12.5</td></tr>
+          <tr><td>Random legal move</td><td>5.5</td><td>3.8</td><td>4.0</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tiny" style="margin-top:8px">&dagger;At least one of 8 samples is correct. &ldquo;Far&rdquo;: 13&ndash;16 squares differ from the nearest training position. All models are trained on three million puzzles.</p>
+
+    <h3 style="margin-top:36px">Beyond chess <span class="tiny">(Table 2)</span></h3>
+    <div class="card tablewrap" style="margin-top:14px">
+      <table class="nums">
+        <thead><tr><th>Task</th><th style="text-align:left">Action drawn</th><th style="text-align:left">Metric (%, &uarr;)</th><th>Image</th><th>Video</th><th style="text-align:left">Strongest baseline</th><th></th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3">Shortest path</td><td rowspan="3" style="text-align:left">route on a grid</td><td style="text-align:left">optimal, held-out maps</td><td>88.8</td><td><b>94.6</b></td><td style="text-align:left">base model, zero-shot</td><td>0.0</td></tr>
+          <tr><td style="text-align:left">optimal, longer paths</td><td>47.0</td><td><b>66.6</b></td><td style="text-align:left">base model, zero-shot</td><td>0.0</td></tr>
+          <tr><td style="text-align:left">optimal, larger maps</td><td>79.0</td><td><b>79.8</b></td><td style="text-align:left">base model, zero-shot</td><td>0.0</td></tr>
+          <tr><td rowspan="2">Cost-aware path<br><span class="tiny">costs never shown</span></td><td rowspan="2" style="text-align:left">route on terrain</td><td style="text-align:left">cheapest route</td><td><b>87.5</b></td><td>82.8</td><td style="text-align:left">fewest steps (BFS)</td><td>59.2</td></tr>
+          <tr><td style="text-align:left">detour or cross</td><td><b>85.0</b></td><td>76.8</td><td style="text-align:left">chance</td><td>50.0</td></tr>
+          <tr><td rowspan="3">Connect Four</td><td rowspan="3" style="text-align:left">disc in a column</td><td style="text-align:left">legal, correct landing row</td><td><b>100.0</b></td><td>99.6</td><td></td><td></td></tr>
+          <tr><td style="text-align:left">keeps the win w/o lookahead</td><td><b>67.5</b></td><td>64.5</td><td></td><td></td></tr>
+          <tr><td style="text-align:left" class="sub">+ one-step</td><td><b>76.4</b></td><td>72.0</td><td style="text-align:left">one-move heuristic</td><td>60.4</td></tr>
+          <tr><td rowspan="3">Go<br><span class="tiny">19&times;19, KGS</span></td><td rowspan="3" style="text-align:left">stone on a point</td><td style="text-align:left">legal move</td><td>99.8</td><td>&ndash;</td><td></td><td></td></tr>
+          <tr><td style="text-align:left">best move</td><td>20.9</td><td>&ndash;</td><td style="text-align:left">random legal move</td><td>0.7</td></tr>
+          <tr><td style="text-align:left" class="sub">+ one-step</td><td><b>31.1</b></td><td>&ndash;</td><td style="text-align:left">copy nearest position</td><td>1.7</td></tr>
+          <tr><td rowspan="2">Billiards</td><td rowspan="2" style="text-align:left">cue angle, power</td><td style="text-align:left">ball potted</td><td>18.6</td><td><b>34.6</b></td><td style="text-align:left">copy nearest shot</td><td>19.0</td></tr>
+          <tr><td style="text-align:left" class="sub">+ one-step</td><td>28.0</td><td><b>47.9</b></td><td style="text-align:left">random shot</td><td>0.7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tiny" style="margin-top:8px">Rules, tile costs and physics are never given; the models learn them from example solutions alone. Routes are built move by move: the image model marks one move per call, the video model generates several moves per clip.</p>
+  </div>
+</section>
+
+<!-- ============================================================== BIBTEX -->
+<section id="bibtex">
+  <div class="wrap narrow">
+    <div class="kicker">Citation</div>
+    <h2 style="margin-bottom:18px">BibTeX</h2>
+    <div class="bibwrap">
+      <button class="iconbtn copy" id="copyBib" aria-label="Copy BibTeX">Copy</button>
+<pre class="bib" id="bib">@article{razlighi2026nextbestmove,
+  title   = {Learning the Next Best Move with Visual Diffusion Models},
+  author  = {Razlighi, Amir and Mahdavi Amiri, Ali and Chrysanthou, Yiorgos
+             and Voynov, Andrey and Cohen-Or, Daniel},
+  journal = {arXiv preprint},
+  year    = {2026}
+}</pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Every image, move, route and shot on this page comes from the paper's models and evaluation; boards and maps are redrawn from the
+    recorded decisions. How the assets were made is described in the <a href="https://github.com/amirhossein-razlighi/next_best_move">code repository</a>.
+    Chess pieces: Colin M.L. Burnett (cburnett set, via python-chess). No cookies, no trackers.
+  </div>
+</footer>
+
+<script src="assets/data/data.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
